@@ -1,0 +1,7 @@
+celery -A newextract worker -l info
+celery -A nextract beat -l info
+python managpy runserver
+
+
+
+# All the three commands in saperate terminal in your project directory.

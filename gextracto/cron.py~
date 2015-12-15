@@ -1,0 +1,19 @@
+from celery.task.schedules import crontab
+from celery.decorators import periodic_task
+from celery.utils.log import get_task_logger
+
+import extr
+logger = get_task_logger(__name__)
+
+
+@periodic_task(
+    run_every=(crontab(minute='*/5')),
+    name="retrieve_mails_per_user",
+    ignore_result=True
+)
+def retrieve_mails_per_user():
+    """
+    Saves latest image from Flickr
+    """
+    get()
+    logger.info("Saved mails!")

@@ -1,0 +1,153 @@
+import os
+os.environ['DJANGO_SETTINGS_MODULE'] = 'newextract.settings'
+from django.contrib.auth import authenticate
+import httplib2, base64
+from stripogram import html2text
+from oauth2client.django_orm import Storage
+from apiclient.discovery import build
+from oauth2client import client
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import authentication, permissions
+from gextracto import models
+from gextracto.models import UserData
+from django.core.mail import send_mail
+from django.utils.functional import SimpleLazyObject
+from django.core import mail
+import sys
+
+import os
+import django
+from gextracto import models
+sys.path.append('/Desktop/beforecronGextracto/newextract')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "newextract.settings")
+django.setup()
+from gextracto.models import CredentialsModel
+from gextracto.models import User
+
+
+
+
+
+class rep:    
+    
+    
+	def extract_headers(self, message):
+	    needed_fields = ('From', 'To', 'Subject')
+	    return {i['name']:i['value'] for i in  message['payload']['headers'] if i['name'] in needed_fields}
+			
+	
+	
+	
+	
+	def get_message_body(self, message):
+	    if 'payload' in message:
+		return self.get_message_body(message['payload'])
+		
+	    elif 'parts' in message:
+		return self.get_message_body(message['parts'][0])
+		
+	    else:
+		data = base64.urlsafe_b64decode(message['body']['data'].encode('ASCII'))
+		markdown_data = html2text(data)#.decode('utf-8', "replace")
+		data = data.replace("\n", "<br/>")
+		    
+		    # return {markdown, html}
+		return {'markdown':unicode( markdown_data,"ISO-8859-1"), 'html':unicode(data,"ISO-8859-1")} if markdown_data else {'html':unicode(data,"ISO-8859-1")}
+			
+			
+	
+	
+	def message_content_html(self, userId, message_id, service):
+	    content = {'id':message_id}
+		# try
+	    message = service.users().messages().get(userId=userId, id=message_id).execute()
+		    
+	    mimetype = message['payload']['mimeType']
+		
+	    if mimetype == 'text/html':
+		return {}
+		#
+	    else:
+		body = self.get_message_body(message)
+		if body == "":
+		    body = "<empty message>"
+			
+	    headers = self.extract_headers(message)
+	    content['body'] = body
+	    content.update(headers)
+
+	    return content
+
+	
+
+	    
+	def collect_mails(self, user, messages, service):
+	    all_messages = []
+	    try:
+		for message in messages:
+		    content = self.message_content_html(user.username, message['id'], service)
+		    if content:
+		        all_messages.append(content)
+		return all_messages
+		            
+		# return empty list if no messages were downloaded
+	    except KeyError:
+		return []
+		
+	    
+	def get(self,usern,labeln):
+	    
+	    user = User.objects.get(username=usern)
+	    label_id = labeln
+	    
+	    storage = Storage(models.CredentialsModel, 'id', user, 'credential')
+	    credentials = storage.get()
+	    http_auth = credentials.authorize(httplib2.Http())
+	    service = build('gmail', 'v1', http=http_auth)
+	    user_Id = user.username
+	    
+		
+		# try
+		# call Google API with a request to get a list of all the labels
+	    response = service.users().messages().list(userId=user_Id, labelIds=label_id, maxResults=100).execute()
+			
+	    all_messages = self.collect_mails(user, response['messages'], service)
+		
+		
+	    if not all_messages:
+		return Response([])
+		
+		
+	    else:
+		if 'nextPageToken' in response:
+		    page_token_flag = True
+
+		    # request more more mails if the download limit has not yet been satisfied
+		    while(page_token_flag):
+		        response = service.users().messages().list(userId=user_Id, pageToken=response['nextPageToken'], maxResults=100).execute()
+		        all_messages.append(self.collect_mails(user, response['messages'], service))
+		        print(all_messages)
+		            #for x in range(0,len(all_messages)):
+		            #b=all_messages[10]
+		            #instance= UserData(user_id=user ,label=label_id, sender = b['From'] , subject=b['Subject'] , body=b['body'])
+		            #instance.save()
+		        page_token_flag = 'nextPageToken' in response
+		    
+		            ##
+		for x in range(0,len(all_messages)):
+		    b=all_messages[10]
+		    instance= UserData(user_id=user ,label=label_id, sender = b['From'] , subject=b['Subject'] , body=b['body'])
+		    instance.save()
+		    #print ("Hi i am here!!!")    
+		    #sending mail
+		send_mail('Your Download Ready!', 'http://127.0.0.1:8000/admin/gextracto/userdata/','(Gextracto) Gextracto <infowikkitech@gmail.com>',[user_Id])
+		    
+		    
+	    return Response(all_messages)
+
+
+if __name__=="__main__":
+    x=rep()
+    x.get(sys.argv[1],sys.argv[2])
+        

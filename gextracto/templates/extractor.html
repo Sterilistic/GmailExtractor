@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+{% load staticfiles %}
+<html lang="en">
+   <head>
+      <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+      <meta name="description" content="">
+      <meta name="author" content="">
+      <link rel="icon" href="../../favicon.ico">
+      <title>Extract for me</title>
+      <!-- Bootstrap core CSS -->
+      <link rel="stylesheet" href="{% static "css/bootstrap.min.css" %}" />
+      <!-- Custom styles for this template -->
+      <link rel="stylesheet" href="{% static "css/dashboard.css" %}" />
+      <!-- Bootstrap Core CSS -->
+      <link href="{% static "css/bootstrap.min.css"%}" rel="stylesheet">
+      <!-- Custom CSS -->
+      <link href="{% static "css/sb-admin.css"%}" rel="stylesheet">
+      <!-- Morris Charts CSS -->
+      <link href="{% static "css/plugins/morris.css"%}" rel="stylesheet">
+      <script src="{% static "js/jquery-1.10.2.min.js"%}"></script>
+      <!-- Custom Fonts -->
+      <link href="{% static "font-awesome/css/font-awesome.min.css"%}" rel="stylesheet" type="text/css">
+      <script src="{% static "js/ie-emulation-modes-warning.js"%}"></script>
+      
+   </head>
+   <body>
+      <div id="wrapper">
+         <!-- Navigation -->
+         <nav  class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+               <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+               <span class="sr-only">Toggle navigation</span>
+               <span class="icon-bar"></span>
+               <span class="icon-bar"></span>
+               <span class="icon-bar"></span>
+               </button>
+               <a  style="color:#fff;" class="navbar-brand" href="index.html">Gmail Extractor<sub>Beta</sub></a>
+            </div>
+            <!-- Top Menu Items -->
+            <ul class="nav navbar-right top-nav">
+               <li class="dropdown">
+                  <a id= "myName" href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-user"></i>  <b class="caret"></b></a>
+                  <ul class="dropdown-menu">
+                     <li>
+                        <a href="/bulkdownload/mydownloads/"><i class="fa fa-fw fa-user"></i> My Downloads</a>
+                     </li>
+                     <li>
+                        <a href="#"><i class="fa fa-fw fa-envelope"></i> Inbox</a>
+                     </li>
+                     <li>
+                        <a href="#"><i class="fa fa-fw fa-gear"></i> Settings</a>
+                     </li>
+                     <li class="divider"></li>
+                     <li>
+                        <a href="/logout/"><i class="fa fa-fw fa-power-off"></i> Log Out</a>
+                     </li>
+                  </ul>
+               </li>
+            </ul>
+            <!-- Sidebar Menu Items - These collapse to the responsive navigation menu on small screens -->
+            <div class="collapse navbar-collapse navbar-ex1-collapse">
+               <ul  id="all_labels" class=" pills nav navbar-nav side-nav  ">
+                  <li class="active">
+                     <a style="background-color:#000;" href="#"><i class="fa fa-fw fa-dashboard"></i> Labels</a>
+                  </li>
+               </ul>
+            </div>
+            <!-- /.navbar-collapse -->
+         </nav>
+         <!--main-page-wrapper-starts-here-->
+         <div id="page-wrapper">
+            <div class="container-fluid">
+               <!-- Page Heading -->
+               <div class="row">
+                  <div class="col-lg-12">
+                     <h4 class="page-header"><i id="labelname" class="fa fa-dashboard">Explore your digital data:</i>
+                     </h4>
+                  </div>
+               </div>
+               <div class="col-sm-6">
+                  <input id="filter_input" type="text" class="form-control"  placeholder="Emails containing words:">
+               </div>
+               <button  onClick="filter_mails()" type="button" class="btn btn-info ">&nbsp;Search&nbsp;</button>&nbsp;&nbsp;&nbsp;
+               <button  data-target="#myModal" data-toggle="modal" type="button" class="btn btn-info ">&nbsp;Click to Download&nbsp;</button>&nbsp;&nbsp;&nbsp;
+               <button   id="bulk_download"  onclick="bulk_download('NoLabel')" data-target="#bulkpop" data-toggle="modal" type="button" class="btn btn-info ">&nbsp;Bulk Download&nbsp;</button>&nbsp;&nbsp;&nbsp;
+               <!-- Modal  data-target="#bulkpop" data-toggle="modal" -->
+               <div  class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+                  <div class="modal-dialog" role="document">
+                     <div class="modal-content">
+                        <div class="modal-header">
+                           <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                           <h4 class="modal-title" id="myModalLabel">Download as JSON</h4>
+                        </div>
+                        <div class="modal-body">
+                           <p > Download all selected mails as a JSON file.</p>
+                           <p>Specify the filename below:</p>
+                           <table>
+                              <tr>
+                                 <input id="json_filename" type="text"    placeholder="Filename">
+                                 .json
+                              </tr>
+                           </table>
+                           <br>
+                           <button type="button" class=" btn btn-danger" onClick="download_as_json()"  >Download</button>
+                        </div>
+                        <div class="modal-footer">
+                           <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+               <!--download as json ends-->
+               <!--bulk modal starts-->
+               <div class="modal fade" id="bulkpop" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+                  <div class="modal-dialog" role="document">
+                     <div class="modal-content">
+                        <div class="modal-header">
+                           <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                           <h4 class="modal-title" id="myModalLabel">Gmail Extractor</h4>
+                        </div>
+                        <div class="modal-body">
+                           <p id="reqresponse"  > <small>We will send you an Email once the download is ready. You may close this window and continue using our service.</small></p>
+                        </div>
+                        <div class="modal-footer">
+                           <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+               <!--bulk modal ends-->
+               <br><br>
+               <div class="container-fluid">
+                  <p class="bg-info lead " style="color:#545454">&nbsp; <input type="checkbox" onClick="toggle(this)" /> <small>Select All</small></p>
+               </div>
+               <div class="container-fluid">
+                  <div class="row-fluid">
+                     <div class="centering text-center">
+                        <center id="loading_error" style="display:none;color:#B20000;">
+                           <br/><br/>
+                           Something went wrong. Please try again.
+                        </center>
+                        <center id="loading_spinner" style="display:none">
+                           <img src="{%static "gif/loading.GIF" %}" alt="Loading..." style="position:relative;top:50%;" height="100em" width="100em">
+                           <br/>
+                           Please wait. While we are retieving your data.
+                           <br/>
+                           <br/>
+                           <!-- Place this code where you'd like the game to appear -->
+                        </center>
+                        <center id="norecordfound" style="display:none">
+                           <br><br>
+                           <img src="{%static "images/no-record-found.png" %}" alt="No Record Found.." style="position:relative;top:50%;" height="150em" width="150em">
+                        </center>
+                     </div>
+                  </div>
+               </div>
+               <!--accordion display-->
+               <div id="mails_accordion"  style="background-color:#fff;" class ="panel-group accordion "  role="tablist" aria-multiselectable="true" >
+               </div>
+               <!--accordion display ends-->  
+            </div>
+         </div>
+         <!-- Create JSON files here -->
+         <div id="json_content" style="display:none;"></div>
+      </div>
+      <!-- Bootstrap core JavaScript -->
+      <!-- Placed at the end of the document so the pages load faster -->
+      <script src="{% static "js/jquery.min.js"%}"></script>
+      <script src="{% static "js/bootstrap.min.js"%}"></script>
+      <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+      <script src="{% static "js/ie10-viewport-bug-workaround.js" %}"></script>
+      <!-- Insert this code before your </body> tag -->
+      <script src="{% static "js/extractor.js" %}"></script>
+      <script src="{% static "foundation/js/vendor/jquery.js" %}"></script>
+      <script src="{% static "foundation/js/foundation.min.js" %}"></script>
+      <script>
+         $(".side-nav > .on").click(function(){
+         $(".side-nav > .on").removeClass("active");
+         $(this).addClass("active");
+         });
+      </script>
+      <script>
+         $(document).foundation();
+            function start(){
+              get_lists();
+              get_user();
+            }
+         window.onload=start;
+      </script>
+      <script type="text/javascript">
+         function toggle(source) {
+         checkboxes = document.getElementsByName('greenCheck');
+         for(var i=0, n=checkboxes.length;i<n;i++) {
+           checkboxes[i].checked = source.checked;
+         }
+         }
+      </script> 
+   </body>
+</html>
